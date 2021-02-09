@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.18)
 project(MainWindow VERSION 1.0.0)
 
 
@@ -52,12 +52,11 @@ elseif (WIN32)
         glew32s.lib
         opengl32.lib
     )
-
-    # Copy UI dll into executable dir
-    add_custom_command(
-        TARGET MainWindow POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        $<TARGET_FILE_DIR:UI>
-        $<TARGET_FILE_DIR:MainWindow>
-    )
+    ## Copy UI dll into executable dir
+    #add_custom_command(
+    #    TARGET MainWindow POST_BUILD
+    #    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    #    $<TARGET_FILE_DIR:UI>
+    #    $<TARGET_FILE_DIR:MainWindow>
+    #)
 endif()

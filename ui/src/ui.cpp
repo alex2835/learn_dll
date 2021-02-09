@@ -32,7 +32,7 @@ DYNALO_EXPORT void DYNALO_CALL Draw(ImGuiContext* context)
             counter++;
         ImGui::SameLine();
         ImGui::Text("counter = %d", counter);
-
+        ImGui::Text("counter = %d", counter);
     
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();

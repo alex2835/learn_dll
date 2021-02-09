@@ -2,11 +2,6 @@
 #define GLEW_STATIC
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include "dynalo/dynalo.hpp"
-
-#include <sstream>
-#include <stdio.h>
-#include <tuple>
 
 #include <thread>
 #include <cassert>
@@ -16,20 +11,63 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include "hot_reloader.h"
 
-static void glfw_error_callback(int error, const char* description)
+
+std::tuple<GLFWwindow*, ImGuiContext*> Init();
+void CleanUp(GLFWwindow* window);
+
+int main(void)
+{
+    auto [window, context] = Init();
+   
+    DLLHotReloader dll("../ui/UI");
+
+    // Main loop
+    while (!glfwWindowShouldClose(window))
+    {
+        glfwPollEvents();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // Call Imgui dll
+        dll.Call<void(ImGuiContext*)>("Draw", context);
+
+        // Load new version if available
+        dll.CheckForUpdate();
+
+        // Rendering
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        glfwSwapBuffers(window);
+    }
+
+    CleanUp(window);
+}
+
+
+
+// ======================= Initializaition =======================
+
+void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-int main(void)
+std::tuple<GLFWwindow*, ImGuiContext*> Init()
 {
-   
-
-   // Setup window
+    // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
-        return 1;
+        return {};
 
     // Decide GL+GLSL versions
 #ifdef __APPLE__
@@ -51,7 +89,7 @@ int main(void)
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
     if (window == NULL)
-        return 1;
+        return {};
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
@@ -76,7 +114,7 @@ int main(void)
     if (err)
     {
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return 1;
+        return {};
     }
 
     // Setup Dear ImGui context
@@ -94,89 +132,11 @@ int main(void)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    return { window, context};
+}
 
-    std::filesystem::file_time_type lats_write_time;
-    std::filesystem::file_time_type cur_write_time;
-
-    dynalo::library* lib = nullptr;
-    void (*Draw)(ImGuiContext*);
-
-    if (!std::filesystem::exists("dll"))
-    {
-        std::filesystem::create_directory("dll");
-    }
-
-    // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        try
-        {
-            std::filesystem::file_time_type temp;
-            temp = std::filesystem::last_write_time(dynalo::to_native_name("../ui/UI").c_str());
-            cur_write_time = temp;
-        }
-        catch (const std::exception& e)
-        {
-            printf("%s", e.what());
-        }
-
-        if (lats_write_time != cur_write_time || lib == nullptr)
-        {
-            try
-            {
-                lats_write_time = cur_write_time;
-                if (lib) delete lib, lib = nullptr;
-
-                std::filesystem::remove(dynalo::to_native_name("dll/UI"));
-                std::filesystem::copy(dynalo::to_native_name("../ui/UI"), dynalo::to_native_name("dll/UI"));
-
-                lib = new dynalo::library(dynalo::to_native_name("dll/UI"));
-                Draw = lib->get_function<void(ImGuiContext*)>("Draw");
-
-            }
-            catch (const std::exception& e)
-            {
-                printf("%s\n", e.what());
-            }
-        }
-
-        if (lib == nullptr)
-        {
-            continue;
-        }
-
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        glfwPollEvents();
-
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-
-        Draw(context);
-      
-
-        // Rendering
-        ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
-    }
-
+void CleanUp(GLFWwindow* window)
+{
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -184,5 +144,4 @@ int main(void)
 
     glfwDestroyWindow(window);
     glfwTerminate();
-
 }
