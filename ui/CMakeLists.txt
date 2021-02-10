@@ -12,5 +12,5 @@ target_link_libraries(UI imgui)
 
 target_include_directories(
     UI PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/DHR
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/DHR/include
 )

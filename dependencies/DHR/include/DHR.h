@@ -94,6 +94,9 @@ struct DLLHotReloader
 
     }
 
+    /*
+    *  @throw If no function with such signature
+    */
     template <typename FunctionSignature, typename ...Args>
     auto Call(const std::string& name, Args... args)
     {
@@ -111,6 +114,7 @@ struct DLLHotReloader
 
     /*
     *  After hot reloading function pointers may be invalid
+    *  @throw If no function with such signature
     */
     template <typename FunctionSignature>
     FunctionSignature* Get(const std::string& name)

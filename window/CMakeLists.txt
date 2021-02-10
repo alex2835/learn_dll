@@ -22,9 +22,8 @@ target_include_directories(
     MainWindow PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/glfw/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/glew/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/DHR/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/imgui
-    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/DHR
-
 )
 
 target_link_directories(
