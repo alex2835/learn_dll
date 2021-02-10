@@ -13,9 +13,9 @@
 
 #include "DHR.h"
 
-
 std::tuple<GLFWwindow*, ImGuiContext*> Init();
 void CleanUp(GLFWwindow* window);
+
 
 int main(void)
 {

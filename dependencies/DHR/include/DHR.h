@@ -2,23 +2,20 @@
 
 #ifdef DHR_EXPORT_SYMBOL
 #define DYNALO_EXPORT_SYMBOLS
-#include "dynalo/symbol_helper.hpp"
-
 #define DHR_EXPORT DYNALO_EXPORT
 #define DHR_CALL DYNALO_CALL
+#include "dynalo/symbol_helper.hpp"
 #else
 
 #include "dynalo/dynalo.hpp"
-
 #include <unordered_map>
 #include <type_traits>
 #include <filesystem>
 #include <thread>
+
 namespace fs = std::filesystem;
 using namespace std::chrono_literals;
-
 const char* CACHED_DLL_DIR = "./HotReloadedDLL/";
-
 
 struct DLLHotReloader
 {
@@ -73,7 +70,7 @@ struct DLLHotReloader
         fs::file_time_type lib_update_time = mLastUpdateTime;
         try
         {
-            lib_update_time = fs::last_write_time(dynalo::to_native_name("../ui/UI").c_str());
+            lib_update_time = fs::last_write_time(mInputPath);
         }
         catch (const std::exception& e)
         {}
@@ -91,7 +88,6 @@ struct DLLHotReloader
             mLastUpdateTime = lib_update_time;
             mFunctionCache.clear();
         }
-
     }
 
     /*
