@@ -1,46 +1,51 @@
 #pragma  once
 
+#ifdef DHR_EXPORT_SYMBOL
+#define DYNALO_EXPORT_SYMBOLS
+#include "dynalo/symbol_helper.hpp"
+
+#define DHR_EXPORT DYNALO_EXPORT
+#define DHR_CALL DYNALO_CALL
+#else
+
 #include "dynalo/dynalo.hpp"
 
-#include <thread>
 #include <unordered_map>
 #include <type_traits>
 #include <filesystem>
+#include <thread>
 namespace fs = std::filesystem;
-
-#include <chrono>
 using namespace std::chrono_literals;
 
+const char* CACHED_DLL_DIR = "./HotReloadedDLL/";
 
-typedef void (*FunctionPointer)(void);
-static const char* OUTPUT_DIR = "./HotReloadedDLL/";
 
 struct DLLHotReloader
 {
-    mutable std::unordered_map<std::string, FunctionPointer> mFunctionCache;
     dynalo::library* mLibrary;
-    fs::file_time_type mLastUpdateTime;
     std::string mInputPath;
     std::string mOutputPath;
+    fs::file_time_type mLastUpdateTime;
 
-    fs::file_time_type lib_update_time;
+    typedef void (*FunctionPointer)(void);
+    mutable std::unordered_map<std::string, FunctionPointer> mFunctionCache;
+
     /*
     *  Name without extension
     *  @throw If dll can't be loaded
     */ 
-    DLLHotReloader(const std::string& path)
+    inline DLLHotReloader(const std::string& path)
         : mLibrary(nullptr)
     {
         // Directory where dll copies are stored
-        if (!std::filesystem::exists(OUTPUT_DIR))
+        if (!std::filesystem::exists(CACHED_DLL_DIR))
         {
-            std::filesystem::create_directory(OUTPUT_DIR);
+            fs::create_directory(CACHED_DLL_DIR);
         }
 
         std::string name;
         std::string input_dir;
         int pos = path.find_last_of('/') + 1;
-
         if (pos != std::string::npos)
         {
             name = dynalo::to_native_name(path.substr(pos));
@@ -50,8 +55,8 @@ struct DLLHotReloader
             name = dynalo::to_native_name(path);
         }
 
-        mInputPath = input_dir + name;
-        mOutputPath = OUTPUT_DIR + name;
+        mInputPath  = input_dir + name;
+        mOutputPath = CACHED_DLL_DIR + name;
         CheckForUpdate();
     }
 
@@ -63,8 +68,9 @@ struct DLLHotReloader
     /*
     *  @throw If dll can't be reloaded
     */
-    void CheckForUpdate()
+    inline void CheckForUpdate()
     {
+        fs::file_time_type lib_update_time = mLastUpdateTime;
         try
         {
             lib_update_time = fs::last_write_time(dynalo::to_native_name("../ui/UI").c_str());
@@ -81,7 +87,9 @@ struct DLLHotReloader
             fs::remove(mOutputPath);
             fs::copy(mInputPath, mOutputPath);
             mLibrary = new dynalo::library(mOutputPath);
+            
             mLastUpdateTime = lib_update_time;
+            mFunctionCache.clear();
         }
 
     }
@@ -102,7 +110,7 @@ struct DLLHotReloader
     }
 
     /*
-    *  After hot reloading function pointer will be invalid
+    *  After hot reloading function pointers may be invalid
     */
     template <typename FunctionSignature>
     FunctionSignature* Get(const std::string& name)
@@ -111,3 +119,5 @@ struct DLLHotReloader
     }
 
 };
+
+#endif

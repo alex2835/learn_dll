@@ -11,7 +11,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include "hot_reloader.h"
+#include "DHR.h"
 
 
 std::tuple<GLFWwindow*, ImGuiContext*> Init();
@@ -20,7 +20,7 @@ void CleanUp(GLFWwindow* window);
 int main(void)
 {
     auto [window, context] = Init();
-   
+
     DLLHotReloader dll("../ui/UI");
 
     // Main loop
@@ -33,8 +33,10 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Call Imgui dll
-        dll.Call<void(ImGuiContext*)>("Draw", context);
+        static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+        // Call Draw function from dll
+        dll.Call<void(ImGuiContext*, ImVec4*)>("Draw", context, &clear_color);
 
         // Load new version if available
         dll.CheckForUpdate();
@@ -44,7 +46,7 @@ int main(void)
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
+        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
@@ -52,6 +54,7 @@ int main(void)
 
     CleanUp(window);
 }
+
 
 
 
